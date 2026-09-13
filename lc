@@ -1,0 +1,53 @@
+#!/bin/sh
+# lc: open the algo-lab UI, starting the server first if it isn't running.
+#
+#   lc                 open http://127.0.0.1:8484 (starts the server if needed)
+#   lc stop            stop the server
+#   lc status          is it running?
+#   lc log             tail the server log
+#   lc adduser NAME    set (or change) a login password for NAME
+#
+# Set LC_ADDR to listen elsewhere, e.g. LC_ADDR=0.0.0.0:8484 lc for duo mode.
+# ~/.config/algo-lab/web.env is sourced if present (KEY=value lines),
+# e.g. ALGOLAB_AI_MODEL=claude-haiku-4-5-20251001 to run hints/reviews on a cheaper model.
+
+set -e
+ADDR="${LC_ADDR:-127.0.0.1:8484}"
+PORT="${ADDR##*:}"
+URL="http://127.0.0.1:$PORT"
+REPO="$(cd "$(dirname "$(readlink "$0" || echo "$0")")" && pwd)"
+ENV_FILE="${HOME}/.config/algo-lab/web.env"
+[ -f "$ENV_FILE" ] && set -a && . "$ENV_FILE" && set +a
+LOG="${TMPDIR:-/tmp}/algo-lab.log"
+
+running() { curl -sf -o /dev/null --max-time 1 "$URL/api/status"; }
+
+case "${1:-open}" in
+  stop)
+    pkill -x algo-lab && echo "stopped" || echo "not running"
+    ;;
+  status)
+    if running; then echo "running at $URL"; else echo "not running"; fi
+    ;;
+  adduser|passwd)
+    [ -n "$2" ] || { echo "usage: lc adduser NAME" >&2; exit 2; }
+    (cd "$REPO" && go build -o algo-lab . && ./algo-lab -adduser "$2")
+    ;;
+  log)
+    tail -f "$LOG"
+    ;;
+  open|"")
+    if ! running; then
+      echo "starting algo-lab on $ADDR (log: $LOG)"
+      (cd "$REPO" && go build -o algo-lab . && nohup ./algo-lab -addr "$ADDR" -open=false >"$LOG" 2>&1 &)
+      for _ in 1 2 3 4 5 6 7 8 9 10; do running && break; sleep 0.3; done
+      running || { echo "server did not start; see $LOG" >&2; exit 1; }
+    fi
+    case "$(uname)" in
+      Darwin) open "$URL" ;;
+      *) xdg-open "$URL" ;;
+    esac
+    ;;
+  *)
+    echo "usage: lc [open|stop|status|log|adduser NAME]" >&2; exit 2 ;;
+esac

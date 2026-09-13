@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>algo-lab</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%23D98E48'/></svg>">
+</head>
+<body>
+<div id="app" class="app" data-view="browse">
+  <header class="topbar" id="topbar">
+    <span class="brand">algo-lab</span>
+    <span class="topbar-view" id="topbar-view">problems</span>
+    <span class="topbar-spacer"></span>
+    <span class="topbar-online" id="topbar-online"></span>
+    <div class="topbar-menu" id="topbar-menu">
+      <button class="topbar-user" id="topbar-user" title="Account" aria-haspopup="true" aria-expanded="false"></button>
+      <div class="topbar-dropdown" id="topbar-dropdown" hidden>
+        <button class="menu-item" id="menu-settings">Settings</button>
+        <button class="menu-item" id="menu-logout">Log out</button>
+      </div>
+    </div>
+  </header>
+  <div id="settings" class="overlay" hidden>
+    <div class="panel focused settings-box">
+      <div class="panel-title">Settings</div>
+      <div class="panel-body">
+        <div class="setting">
+          <div class="setting-head">Appearance</div>
+          <div class="setting-row"><label class="dim">Theme&nbsp; <select id="theme-select"></select></label></div>
+        </div>
+        <div class="setting">
+          <div class="setting-head">Account</div>
+          <div class="setting-row" id="password-row">
+            <input id="pw-current" type="password" placeholder="current password" autocomplete="current-password">
+            <input id="pw-new" type="password" placeholder="new password" autocomplete="new-password">
+            <input id="pw-confirm" type="password" placeholder="repeat new password" autocomplete="new-password">
+            <button id="pw-save">set password</button>
+          </div>
+          <div class="dim" id="pw-note"></div>
+        </div>
+        <div class="setting" id="admin-section" hidden>
+          <div class="setting-head">Server &amp; cache <span class="dim">· admin only</span></div>
+          <div class="kv" id="settings-status"></div>
+        </div>
+        <div class="setting-row">
+          <span class="sep"></span>
+          <button id="settings-close" class="primary">done</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div id="login" class="overlay" hidden>
+    <form class="panel focused login-box" id="signin-form">
+      <div class="panel-title">Sign in</div>
+      <div class="panel-body">
+        <div class="login-row"><span class="accent">&rsaquo;</span> <input id="signin-name" type="text" maxlength="32" placeholder="name" autocomplete="username"></div>
+        <div class="login-row"><span class="accent">&middot;</span> <input id="signin-password" type="password" placeholder="password (leave blank if none)" autocomplete="current-password"> <button type="submit" class="primary">sign in</button></div>
+        <div class="dim err" id="signin-error"></div>
+        <div class="login-switch">New here? <a id="to-signup" href="#">Create an account</a></div>
+      </div>
+    </form>
+    <form class="panel focused login-box" id="signup-form" hidden>
+      <div class="panel-title">Create account</div>
+      <div class="panel-body">
+        <div class="login-row"><span class="accent">&rsaquo;</span> <input id="signup-name" type="text" maxlength="32" placeholder="choose a name" autocomplete="username"></div>
+        <div class="login-row"><span class="accent">&middot;</span> <input id="signup-password" type="password" placeholder="choose a password (optional)" autocomplete="new-password"></div>
+        <div class="login-row"><span class="accent">+</span> <input id="signup-code" type="text" placeholder="signup code" autocomplete="off"> <button type="submit" class="primary">create account</button></div>
+        <div class="dim err" id="signup-error"></div>
+        <div class="login-switch">Have an account? <a id="to-signin" href="#">Sign in</a></div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ============================ Browse view ============================ -->
+  <div id="browse" class="browse">
+    <section class="panel" id="p-filters" data-focus="filters">
+      <div class="panel-title">Filters</div>
+      <div class="panel-body sidebar" id="sidebar"></div>
+      <div class="panel-info" id="filters-info"></div>
+    </section>
+
+    <section class="panel focused" id="p-list" data-focus="list">
+      <div class="panel-title" id="list-title">Problems</div>
+      <div class="panel-body list-body">
+        <div class="search-row"><span class="accent">/</span> <input id="search" type="search" placeholder="search title, number, topic" autocomplete="off"></div>
+        <div class="list-head"><span class="col-id">#</span><span class="col-title">Title</span><span class="col-diff">Diff</span></div>
+        <div class="list-rows" id="rows" tabindex="0"></div>
+      </div>
+      <div class="panel-info" id="list-info"></div>
+    </section>
+
+    <section class="panel" id="p-preview" data-focus="preview">
+      <div class="panel-title" id="preview-title">Preview</div>
+      <div class="panel-body statement" id="preview" tabindex="0"><span class="dim">Select a problem to preview it.</span></div>
+      <div class="meta-strip kv" id="preview-meta" hidden></div>
+      <div class="panel-info" id="preview-info"></div>
+    </section>
+
+    <footer class="footer" id="browse-footer"></footer>
+  </div>
+
+  <!-- ============================ Solve view ============================= -->
+  <div id="solve" class="solve" hidden>
+    <section class="panel" id="p-statement" data-focus="statement">
+      <div class="panel-title tabs" id="left-tabs"><span id="statement-title" class="tab active" data-ltab="statement">Problem</span><button class="tab" data-ltab="duo" id="duo-tab" title="Partner's editor (ctrl+2 / D)">Duo</button><button class="tab" data-ltab="attempts" id="attempts-tab" title="Saved attempts (ctrl+3 / A)">Attempts</button></div>
+      <div class="panel-body statement" id="statement" tabindex="0"></div>
+      <div class="panel-body" id="attempts-pane" hidden><div class="tabpane" id="tab-attempts"></div></div>
+      <div class="panel-body duo-pane" id="duo-pane" hidden>
+        <div class="duo-people" id="duo-people"></div>
+        <div class="partner" id="partner" hidden>
+          <div class="toolbar partner-bar"><span class="accent" id="partner-name"></span><span class="dim" id="partner-status">live</span><span class="sep"></span><button id="btn-copy-partner" title="Replace my code with theirs">copy</button><button id="btn-leave-duo" title="Leave the duo">leave</button></div>
+          <div class="editor partner-editor" id="partner-editor"></div>
+        </div>
+      </div>
+      <div class="panel-info" id="statement-info"><span id="statement-diff"></span></div>
+    </section>
+
+    <section class="panel focused" id="p-editor" data-focus="editor">
+      <div class="panel-title">Solution · <span id="editor-lang">python3</span></div>
+      <div class="toolbar">
+        <select id="lang" title="Language (ctrl+l)"></select>
+        <button id="btn-save" title="Save attempt (ctrl+s)">save attempt</button>
+        <span class="sep"></span>
+        <button id="btn-hint1" title="Hint level 1: a nudge">hint 1</button>
+        <button id="btn-hint2" title="Hint level 2: the approach">hint 2</button>
+        <button id="btn-hint3" title="Hint level 3: walkthrough">hint 3</button>
+        <button id="btn-review" title="Review my code (ctrl+enter)">review</button>
+        <span class="sep"></span>
+        <button id="btn-run" class="primary" title="Run with the local interpreter (ctrl+r)">▶ run</button>
+        <button id="btn-reset" title="Reset to starter code">reset</button>
+        <span class="sep"></span>
+        <span class="progress-control" id="progress-control" title="Your progress on this problem">
+          <button data-progress="attempted">attempting</button>
+          <button data-progress="solved">solved</button>
+          <button data-progress="" title="clear">✕</button>
+        </span>
+      </div>
+      <div class="panel-body editor" id="editor"></div>
+      <div class="panel-info" id="editor-info"></div>
+    </section>
+
+    <section class="panel" id="p-bottom" data-focus="bottom">
+      <div class="panel-title tabs" id="bottom-tabs">
+        <button class="tab active" data-tab="hint">Hint</button>
+        <button class="tab" data-tab="review">Review</button>
+        <button class="tab" data-tab="output">Output</button>
+        <button class="tab" data-tab="examples" id="examples-tab">Examples</button>
+        <button class="tab collapse" id="bottom-collapse" title="Hide this box (ctrl+` or B)">▾ hide</button>
+      </div>
+      <div class="panel-body" id="bottom-body">
+        <div class="tabpane" id="tab-hint"></div>
+        <div class="tabpane" id="tab-review" hidden></div>
+        <div class="tabpane output" id="tab-output" hidden></div>
+        <div class="tabpane examples" id="tab-examples" hidden></div>
+      </div>
+      <div class="panel-info" id="bottom-info"></div>
+    </section>
+
+    <footer class="footer" id="solve-footer"></footer>
+  </div>
+
+  <!-- ============================ Scratch view =========================== -->
+  <div id="scratch" class="scratch" hidden>
+    <section class="panel" id="p-scratches" data-focus="scratches">
+      <div class="panel-title" id="scratches-title">Scratches</div>
+      <div class="panel-body sidebar" id="scratch-list"></div>
+      <div class="panel-info"><span>n new</span><span>x delete</span></div>
+    </section>
+
+    <section class="panel focused" id="p-scratch-editor" data-focus="seditor">
+      <div class="panel-title">Scratch · <span id="scratch-lang">python3</span></div>
+      <div class="toolbar">
+        <select id="scratch-lang-select" title="Language (ctrl+l): only installed interpreters are listed"></select>
+        <button id="btn-scratch-run" class="primary" title="Run (ctrl+enter or ctrl+r)">▶ run</button>
+        <button id="btn-scratch-new" title="New scratch (n)">new</button>
+        <button id="btn-scratch-delete" title="Delete this scratch">delete</button>
+        <span class="sep"></span>
+        <label class="dim stdin-label">stdin <textarea id="stdin" rows="1" placeholder="(optional, fed to the program)" spellcheck="false"></textarea></label>
+      </div>
+      <div class="panel-body editor" id="scratch-editor"></div>
+      <div class="panel-info" id="scratch-editor-info"></div>
+    </section>
+
+    <section class="panel" id="p-output" data-focus="output">
+      <div class="panel-title tabs"><span class="tab active">Output</span><button class="tab collapse" id="output-collapse" title="Hide this box (ctrl+` or B)">▾ hide</button></div>
+      <div class="panel-body output" id="scratch-output"><span class="dim">ctrl+enter runs the code; stdout and stderr appear here.</span></div>
+      <div class="panel-info" id="output-info"></div>
+    </section>
+
+    <footer class="footer" id="scratch-footer"></footer>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" data-manual></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
